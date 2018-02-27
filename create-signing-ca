@@ -25,7 +25,9 @@ if [ "${CA_DIR}" == "" ]; then
 fi
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# shellcheck source=functions
 source ${BIN_DIR}/functions
+# shellcheck source=defaults.conf
 source ${BIN_DIR}/defaults.conf
 
 HOME=$CA_DIR
@@ -36,16 +38,17 @@ echo
 echo "Creating new signing sub-CA in '${HOME}'"
 echo
 
-init_ca_home ${HOME}
-generate_conf ${HOME}/bin/defaults.conf
-source ${HOME}/bin/defaults.conf
+init_ca_home "${HOME}"
+generate_conf "${HOME}/bin/defaults.conf"
+# shellcheck source=defaults.conf
+source "${HOME}/bin/defaults.conf"
 
 echo
 echo -n "Enter passphase for encrypting signing CA key: "
-read -s PASS1
+read -r -s PASS1
 echo
 echo -n "Verifying - Enter passphase for encrypting signing CA key: "
-read -s PASS2
+read -r -s PASS2
 echo
 
 if [ "${PASS1}" != "${PASS2}" ]; then
@@ -57,14 +60,14 @@ export CA_PASS=${PASS1}
 echo
 
 echo -n "Enter passphase for root CA key: "
-read -s PARENT_PASS
+read -r -s PARENT_PASS
 echo
 export CA_PARENT_PASS=${PARENT_PASS}
 
 # Fully-qualify home to we can return to it later
 HOME=$( cd "${HOME}" && pwd )
 
-pushd ${HOME} > /dev/null
+pushd "${HOME}" > /dev/null || exit 1
 
 # Generate the signing CA openssl config
 template "${BIN_DIR}/templates/signing.tpl" "conf/ca.conf"
@@ -81,15 +84,15 @@ openssl req -new -batch \
             -passin env:CA_PASS
 
 # Create the signing CA certificate
-pushd ${PARENT} > /dev/null
+pushd "${PARENT}" > /dev/null || exit 1
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in ${HOME}/ca/ca.csr \
-           -out ${HOME}/ca/ca.crt \
+           -in "${HOME}/ca/ca.csr" \
+           -out "${HOME}/ca/ca.crt" \
            -days 3652 \
            -extensions signing_ca_ext \
            -passin env:CA_PARENT_PASS
-popd > /dev/null
+popd > /dev/null || exit 1
 
 # Create the signing CRL
 openssl ca -gencrl -batch \
@@ -98,16 +101,16 @@ openssl ca -gencrl -batch \
 
 # Create the chain bundle if this is a sub-CA
 if [ -f "${PARENT}/ca/chain.pem" ]; then
-    cat ${PARENT}/ca/chain.pem > ca/chain.pem
+    cat "${PARENT}/ca/chain.pem" > ca/chain.pem
 fi
 cat ca/ca.crt >> ca/chain.pem
 
 for BIN in ${BINARIES}; do
-    cp ${BIN_DIR}/${BIN} bin/
+    cp "${BIN_DIR}/${BIN}" bin/
 done
-cp -r ${BIN_DIR}/templates bin/
+cp -r "${BIN_DIR}/templates" bin/
 
-popd > /dev/null
+popd > /dev/null || exit 1
 
 echo
 echo "Signing sub-CA initialized."

@@ -2,6 +2,7 @@
 # Derek Moore <derek@ripple.com>
 
 # Binaries copied during install
+# shellcheck disable=SC2034
 BINARIES="
 create-root-ca
 create-signing-ca
@@ -14,14 +15,15 @@ functions
 
 override() {
     target=${1#USER_}
-    NAME=`echo $2 | sed 's/[^A-Za-z0-9-]/-/g'`
+    # shellcheck disable=SC2001
+    NAME=$(echo "$2" | sed 's/[^A-Za-z0-9-]/-/g')
     eval "${target}=\$${1}"
 }
 
 
 fullpath() {
-    cd $(dirname $1)
-    echo $PWD/$(basename $1)
+    cd "$(dirname "$1")" || exit 1
+    echo "$PWD/$(basename "$1")"
 }
 
 ##
@@ -35,9 +37,9 @@ fullpath() {
 template() {
     local REGEX=""
     for VAR in ${!CA_*}; do
-        REGEX="${REGEX}s#{{\s*${VAR}\s*}}#${!VAR}#g; "
+        REGEX="${REGEX}s#{{\\s*${VAR}\\s*}}#${!VAR}#g; "
     done
-    sed -e "${REGEX}" < $1 > $2
+    sed -e "${REGEX}" < "$1" > "$2"
 }
 
 
@@ -60,7 +62,7 @@ init_ca_home() {
 	exit 1
     fi
 
-    pushd ${HOME} > /dev/null
+    pushd "${HOME}" > /dev/null || exit 1
 
     # Create top-level CA structure
     mkdir -p ca
@@ -85,7 +87,7 @@ init_ca_home() {
     echo 01 > ca/db/crt.srl
     echo 01 > ca/db/crl.srl
 
-    popd > /dev/null
+    popd > /dev/null || exit 1
 }
 
 ##
@@ -97,14 +99,15 @@ generate_conf() {
     DEST=$1
 
     echo -n "Short label for new CA [${CA_NAME}]: "
-    read NAME
+    read -r NAME
     if [ -n "${NAME}" ]; then
         CA_NAME=${NAME}
-        CA_NAME=`echo ${CA_NAME} | sed 's/[^A-Za-z0-9-]/-/g'`
+        # shellcheck disable=SC2001
+        CA_NAME=$(echo "${CA_NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
     fi
 
     echo -n "Domain name for new CA [${CA_DOMAIN}]: "
-    read DOMAIN
+    read -r DOMAIN
     if [ -n "${DOMAIN}" ]; then
         CA_DOMAIN=${DOMAIN}
     elif [ -z "${CA_DOMAIN}" ]; then
@@ -117,31 +120,31 @@ generate_conf() {
     echo
 
     echo -n "Default country code for new certificates [${CA_CERT_C}]: "
-    read CERT_C
+    read -r CERT_C
     if [ -n "${CERT_C}" ]; then
         CA_CERT_C=${CERT_C}
     fi
 
     echo -n "Default state for new certificates [${CA_CERT_ST}]: "
-    read CERT_ST
+    read -r CERT_ST
     if [ -n "${CERT_ST}" ]; then
         CA_CERT_ST=${CERT_ST}
     fi
 
     echo -n "Default city for new certificates [${CA_CERT_L}]: "
-    read CERT_L
+    read -r CERT_L
     if [ -n "${CERT_L}" ]; then
         CA_CERT_L=${CERT_L}
     fi
 
     echo -n "Default org for new certificates [${CA_CERT_O}]: "
-    read CERT_O
+    read -r CERT_O
     if [ -n "${CERT_O}" ]; then
         CA_CERT_O=${CERT_O}
     fi
 
     echo -n "Default org unit for new certificates [${CA_CERT_OU}]: "
-    read CERT_OU
+    read -r CERT_OU
     if [ -n "${CERT_OU}" ]; then
         CA_CERT_OU=${CERT_OU}
     fi
@@ -150,12 +153,12 @@ generate_conf() {
 
     CA_CERT_CN="${CA_CERT_O} Certificate Authority"
     echo -n "Common Name for CA certificate [${CA_CERT_CN}]: "
-    read CERT_CN
+    read -r CERT_CN
     if [ -n "${CERT_CN}" ]; then
         CA_CERT_CN=${CERT_CN}
     fi
 
-    cat > ${DEST} << EOF
+    cat > "${DEST}" << EOF
 CA_DOMAIN="${CA_DOMAIN}"
 CA_NAME="${CA_NAME}"
 

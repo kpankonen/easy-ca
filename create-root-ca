@@ -25,7 +25,9 @@ if [ "${CA_DIR}" == "" ]; then
 fi
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# shellcheck source=functions
 source ${BIN_DIR}/functions
+# shellcheck source=functions
 [[ -f "${BIN_DIR}/defaults.conf" ]] && source ${BIN_DIR}/defaults.conf
 
 HOME=$CA_DIR
@@ -35,16 +37,17 @@ echo
 echo "Creating root CA in '${HOME}'"
 echo
 
-init_ca_home ${HOME}
-generate_conf ${HOME}/bin/defaults.conf
-source ${HOME}/bin/defaults.conf
+init_ca_home "${HOME}"
+generate_conf "${HOME}/bin/defaults.conf"
+# shellcheck source=defaults.conf
+source "${HOME}/bin/defaults.conf"
 
 echo
 echo -n "Enter passphase for encrypting root CA key: "
-read -s PASS1
+read -r -s PASS1
 echo
 echo -n "Verifying - Enter passphase for encrypting root CA key: "
-read -s PASS2
+read -r -s PASS2
 echo
 
 if [ "${PASS1}" != "${PASS2}" ]; then
@@ -53,7 +56,7 @@ if [ "${PASS1}" != "${PASS2}" ]; then
 fi
 export CA_PASS=${PASS1}
 
-pushd ${HOME} > /dev/null
+pushd "${HOME}" > /dev/null || exit 1
 
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "conf/ca.conf"
@@ -85,11 +88,11 @@ openssl ca -gencrl -batch \
 
 # Replicate the existing binary directory
 for BIN in ${BINARIES}; do
-    cp ${BIN_DIR}/${BIN} bin/
+    cp "${BIN_DIR}/${BIN}" bin/
 done
-cp -r ${BIN_DIR}/templates bin/
+cp -r "${BIN_DIR}/templates" bin/
 
-popd > /dev/null
+popd > /dev/null || exit 1
 
 echo
 echo "Root CA initialized."

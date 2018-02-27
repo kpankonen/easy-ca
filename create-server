@@ -41,12 +41,16 @@ fi
 
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# shellcheck source=functions
 source ${BIN_DIR}/functions
+# shellcheck source=defaults.conf
 source ${BIN_DIR}/defaults.conf
 
 # Sanitize the commonName to make it suitable for use in filenames
-SAFE_NAME=`echo ${SERVER_NAME} | sed 's/\*/star/g'`
-SAFE_NAME=`echo ${SAFE_NAME} | sed 's/[^A-Za-z0-9-]/-/g'`
+# shellcheck disable=SC2001
+SAFE_NAME=$(echo "${SERVER_NAME}" | sed 's/\*/star/g')
+# shellcheck disable=SC2001
+SAFE_NAME=$(echo "${SAFE_NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
 
 echo
 echo "Creating new SSL server certificate for:"
@@ -54,15 +58,15 @@ echo "commonName: ${SERVER_NAME}"
 echo "subjectAltName: ${ALT_NAME}"
 echo
 
-pushd ${BIN_DIR}/.. > /dev/null
+pushd "${BIN_DIR}/.." > /dev/null || exit 1
 
-if [ -f conf/${SAFE_NAME}.server.conf ]; then
+if [ -f "conf/${SAFE_NAME}.server.conf" ]; then
     echo "Configuration already exists for '${SERVER_NAME}', exiting."
     exit 1
 fi
 
 echo -n "Enter passphase for signing CA key: "
-read -s PASS
+read -r -s PASS
 echo
 export CA_PASS=${PASS}
 
@@ -73,21 +77,21 @@ template "${BIN_DIR}/templates/server.tpl" "conf/${SAFE_NAME}.server.conf"
 
 # Create the server key and csr
 openssl req -new -nodes \
-            -config conf/${SAFE_NAME}.server.conf \
-            -keyout private/${SAFE_NAME}.server.key \
-            -out csr/${SAFE_NAME}.server.csr
-chmod 0400 private/${SAFE_NAME}.server.key
+            -config "conf/${SAFE_NAME}.server.conf" \
+            -keyout "private/${SAFE_NAME}.server.key" \
+            -out "csr/${SAFE_NAME}.server.csr"
+chmod 0400 "private/${SAFE_NAME}.server.key"
 
 # Create the server certificate
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in csr/${SAFE_NAME}.server.csr \
-           -out certs/${SAFE_NAME}.server.crt \
+           -in "csr/${SAFE_NAME}.server.csr" \
+           -out "certs/${SAFE_NAME}.server.crt" \
            -days 730 \
            -extensions server_ext \
            -passin env:CA_PASS
 
-popd > /dev/null
+popd > /dev/null || exit 1
 
 echo
 echo "Server certificate created."

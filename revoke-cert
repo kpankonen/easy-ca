@@ -25,7 +25,9 @@ if [ "${CERT}" == "" ]; then
 fi
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+# shellcheck source=functions
 source ${BIN_DIR}/functions
+# shellcheck source=defaults.conf
 source ${BIN_DIR}/defaults.conf
 
 echo
@@ -38,9 +40,9 @@ if [ ! -f "${CERT}" ]; then
 fi
 
 # Fully-qualify path to cert
-CERT=$( fullpath ${CERT} )
+CERT=$( fullpath "${CERT}" )
 
-pushd ${BIN_DIR}/.. > /dev/null
+pushd "${BIN_DIR}/.." > /dev/null || exit 1
 
 echo "Reason for revocation: "
 echo
@@ -53,7 +55,7 @@ echo "6. cessationOfOperation"
 echo "7. certificateHold"
 echo
 echo -n "Enter 1-7 [1]: "
-read INDEX
+read -r INDEX
 
 [ -z "${INDEX}" ] && INDEX="1"
 
@@ -70,8 +72,8 @@ esac
 
 echo "You are about to revoke this certificate with reason '${REASON}'."
 echo -n "Are you SURE you wish to continue? [y/N]: "
-read SURE
-if [ "${SURE}" != "y" -a "${SURE}" != "Y" ]; then
+read -r SURE
+if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     echo "Exiting."
     exit 1
 fi
@@ -79,15 +81,15 @@ fi
 # Revoke the certificate
 openssl ca \
            -config conf/ca.conf \
-           -revoke ${CERT} \
-           -crl_reason ${REASON}
+           -revoke "${CERT}" \
+           -crl_reason "${REASON}"
 
 # Regenerate the CRL
 openssl ca -gencrl \
            -config conf/ca.conf \
            -out crl/ca.crl
 
-popd > /dev/null
+popd > /dev/null || exit 1
 
 echo
 echo "Server certificate revoked."
