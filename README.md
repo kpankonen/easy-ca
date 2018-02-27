@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/redredgroovy/easy-ca.svg?branch=master)](https://travis-ci.org/redredgroovy/easy-ca)
+
 # easy-ca
 OpenSSL wrapper scripts for managing basic CA functions
 

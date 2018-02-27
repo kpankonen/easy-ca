@@ -1,0 +1,3 @@
+---
+language: bash
+script: shopt -s extglob; shellcheck -x !(templates|README.md|LICENSE|defaults.conf)
